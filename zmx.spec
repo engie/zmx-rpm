@@ -5,6 +5,7 @@ Version:        0.4.1
 Release:        1%{?dist}
 Summary:        Session persistence for terminal processes
 
+# SPDX
 License:        MIT
 URL:            https://github.com/neurosnap/zmx
 Source0:        %{url}/archive/v%{version}/zmx-%{version}.tar.gz
@@ -58,6 +59,10 @@ git add -A && git commit -q -m "build"
     -Dtarget=%{zig_arch}-linux-gnu \
     --prefix "zig-out"
 
+%check
+./zig-sdk/zig build test \
+    -Dtarget=%{zig_arch}-linux-gnu
+
 %install
 install -Dm755 zig-out/bin/zmx %{buildroot}%{_bindir}/zmx
 
@@ -72,6 +77,7 @@ zig-out/bin/zmx completions fish > %{buildroot}%{_datadir}/fish/vendor_completio
 
 %files
 %license LICENSE
+%doc README.md CHANGELOG.md
 %{_bindir}/zmx
 %{_datadir}/bash-completion/completions/zmx
 %{_datadir}/zsh/site-functions/_zmx
