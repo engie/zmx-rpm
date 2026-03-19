@@ -51,9 +51,11 @@ git config user.email "build@localhost"
 git config user.name "build"
 git add -A && git commit -q -m "build"
 
+# Pin target to baseline CPU so the binary runs on all machines of this arch
 ./zig-sdk/zig build \
     -Doptimize=ReleaseSafe \
     -Dversion=%{version} \
+    -Dtarget=%{zig_arch}-linux-gnu \
     --prefix "zig-out"
 
 %install
