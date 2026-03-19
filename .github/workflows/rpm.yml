@@ -1,0 +1,68 @@
+name: Build RPM
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      zmx_version:
+        description: 'zmx version to build (e.g. 0.4.1)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-rpm:
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.runner }}
+    container: fedora:latest
+    steps:
+      - name: Install build dependencies
+        run: dnf install -y rpm-build rpmdevtools curl tar xz git gcc glibc-devel
+
+      - name: Checkout packaging repo
+        uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.zmx_version }}" ]; then
+            echo "version=${{ github.event.inputs.zmx_version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download zmx source
+        run: |
+          version=${{ steps.version.outputs.version }}
+          curl -sL "https://github.com/neurosnap/zmx/archive/v${version}.tar.gz" \
+            -o zmx-${version}.tar.gz
+
+      - name: Setup rpmbuild tree
+        run: |
+          rpmdev-setuptree
+          version=${{ steps.version.outputs.version }}
+          cp zmx-${version}.tar.gz ~/rpmbuild/SOURCES/
+
+      - name: Build RPM
+        run: rpmbuild -bb zmx.spec
+
+      - name: Upload RPM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zmx-rpm-${{ matrix.arch }}
+          path: ~/rpmbuild/RPMS/*/zmx-*.rpm
+
+      - name: Upload RPM to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ~/rpmbuild/RPMS/*/zmx-*.rpm
