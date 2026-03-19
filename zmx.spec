@@ -46,12 +46,15 @@ mv zig-%{zig_arch}-linux-%{zig_version} zig-sdk
 
 %build
 # Initialize a git repo so build.zig can resolve git SHA
-git init -q && git add -A && git commit -q -m "build" --author="build <build@build>"
+git init -q
+git config user.email "build@localhost"
+git config user.name "build"
+git add -A && git commit -q -m "build"
 
 ./zig-sdk/zig build \
     -Doptimize=ReleaseSafe \
     -Dversion=%{version} \
-    --prefix "%{_builddir}/zmx-%{version}/zig-out"
+    --prefix "zig-out"
 
 %install
 install -Dm755 zig-out/bin/zmx %{buildroot}%{_bindir}/zmx
